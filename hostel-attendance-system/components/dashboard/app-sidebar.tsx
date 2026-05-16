@@ -25,7 +25,6 @@ import {
   Users,
   LogOut,
   DoorOpen,
-  ScanFace,
 } from 'lucide-react'
 
 const studentNavItems = [
@@ -61,11 +60,6 @@ const adminNavItems = [
     title: 'Grievances',
     url: '/admin/grievances',
     icon: MessageSquareWarning,
-  },
-  {
-    title: 'Face Scanner',
-    url: '/admin/scanner',
-    icon: ScanFace,
   },
 ]
 

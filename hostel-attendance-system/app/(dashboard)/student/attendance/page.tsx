@@ -100,7 +100,7 @@ export default function AttendancePage() {
             <ul className="space-y-1 text-muted-foreground text-left">
               <li>One attendance per 24 hours (rolling window).</li>
               <li>Use the same Student ID and a clear front-facing photo at signup.</li>
-              <li>After registering, wait ~1–2 min for the model to retrain.</li>
+              <li>After signup, the face model retrains automatically in the background (~1–2 min).</li>
             </ul>
           </div>
 

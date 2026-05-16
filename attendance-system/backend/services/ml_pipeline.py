@@ -13,7 +13,8 @@ EDGE_DIR = PROJECT_ROOT / "edge_face_recognition"
 
 
 def retrain_face_model() -> dict:
-    """Run generate_embeddings.py then train_Ann_model.py."""
+    """Run generate_embeddings.py then train_Ann_model.py (triggered after signup)."""
+    logger.info("Starting face model retrain (embeddings + ANN)")
     python = sys.executable
     steps = []
 
@@ -45,4 +46,5 @@ def retrain_face_model() -> dict:
             logger.error("ML step failed: %s\n%s", script, result.stderr)
             return {"ok": False, "steps": steps, "error": f"{script} failed"}
 
+    logger.info("Face model retrain finished successfully")
     return {"ok": True, "steps": steps, "message": "Model retrained successfully"}
