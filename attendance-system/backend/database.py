@@ -7,6 +7,11 @@ import bcrypt
 
 from config import DB_PATH, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD
 
+def _run_seed(conn) -> None:
+    from services.seed_data import seed_demo_data
+
+    seed_demo_data(conn)
+
 
 def get_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -102,6 +107,8 @@ def init_db() -> None:
                     now,
                 ),
             )
+
+        _run_seed(conn)
 
 
 def hash_password(password: str) -> str:
