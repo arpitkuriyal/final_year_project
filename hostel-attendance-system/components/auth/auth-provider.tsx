@@ -9,13 +9,31 @@ interface User {
   email: string
   role: 'student' | 'admin'
   roomNumber?: string
+  studentId?: string
+  block?: string
+  branch?: string
+  batch?: string
+  photoFilename?: string
+  augmentCount?: number
+}
+
+export interface SignupData {
+  name: string
+  email: string
+  password: string
+  roomNumber: string
+  studentId: string
+  block: string
+  branch: string
+  batch: string
+  photo: File
 }
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signup: (data: { name: string; email: string; password: string; roomNumber: string }) => Promise<{ success: boolean; error?: string }>
+  signup: (data: SignupData) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -62,8 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(data.user)
-      
-      // Redirect based on role
+
       if (data.user.role === 'admin') {
         router.push('/admin')
       } else {
@@ -76,12 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signup = async (data: { name: string; email: string; password: string; roomNumber: string }) => {
+  const signup = async (data: SignupData) => {
     try {
+      const formData = new FormData()
+      formData.append('name', data.name)
+      formData.append('email', data.email)
+      formData.append('password', data.password)
+      formData.append('room_number', data.roomNumber)
+      formData.append('student_id', data.studentId)
+      formData.append('block', data.block)
+      formData.append('branch', data.branch)
+      formData.append('batch', data.batch)
+      formData.append('photo', data.photo)
+
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: formData,
       })
 
       const responseData = await res.json()

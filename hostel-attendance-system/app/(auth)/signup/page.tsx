@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,13 +10,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Building2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Building2, Camera, Loader2, Eye, EyeOff } from 'lucide-react'
 
 const signupSchema = z.object({
+  studentId: z.string().min(3, 'Student ID is required'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   roomNumber: z.string().min(1, 'Room number is required'),
+  block: z.string().min(1, 'Block is required'),
+  branch: z.string().min(1, 'Branch is required'),
+  batch: z.string().min(1, 'Batch is required'),
 })
 
 type SignupForm = z.infer<typeof signupSchema>
@@ -26,6 +30,9 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
@@ -33,18 +40,35 @@ export default function SignupPage() {
     formState: { errors },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
+    defaultValues: {
+      block: 'A',
+      branch: 'CSE',
+      batch: '2026',
+    },
   })
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhoto(file)
+    setPhotoPreview(URL.createObjectURL(file))
+  }
+
   const onSubmit = async (data: SignupForm) => {
+    if (!photo) {
+      setError('Please upload a clear face photo for attendance recognition.')
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
-    const result = await signup(data)
-    
+    const result = await signup({ ...data, photo })
+
     if (!result.success) {
       setError(result.error || 'Signup failed')
     }
-    
+
     setIsLoading(false)
   }
 
@@ -55,60 +79,66 @@ export default function SignupPage() {
           <Building2 className="h-7 w-7 text-primary-foreground" />
         </div>
         <div className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+          <CardTitle className="text-2xl font-bold">Hostel Registration</CardTitle>
           <CardDescription>
-            Register as a new hostel resident
+            Sign up with your details and face photo. Photos are augmented for the ML attendance model.
           </CardDescription>
         </div>
       </CardHeader>
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 max-h-[70vh] overflow-y-auto">
           {error && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="studentId">Student ID</Label>
+              <Input id="studentId" placeholder="e.g. 58901" {...register('studentId')} />
+              {errors.studentId && (
+                <p className="text-sm text-destructive">{errors.studentId.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="roomNumber">Room Number</Label>
+              <Input id="roomNumber" placeholder="e.g. 101" {...register('roomNumber')} />
+              {errors.roomNumber && (
+                <p className="text-sm text-destructive">{errors.roomNumber.message}</p>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Enter your full name"
-              {...register('name')}
-              aria-invalid={!!errors.name}
-            />
+            <Input id="name" placeholder="Enter your full name" {...register('name')} />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              {...register('email')}
-              aria-invalid={!!errors.email}
-            />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="block">Block</Label>
+              <Input id="block" placeholder="A" {...register('block')} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="branch">Branch</Label>
+              <Input id="branch" placeholder="CSE" {...register('branch')} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="batch">Batch</Label>
+              <Input id="batch" placeholder="2026" {...register('batch')} />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="roomNumber">Room Number</Label>
-            <Input
-              id="roomNumber"
-              type="text"
-              placeholder="e.g., 101"
-              {...register('roomNumber')}
-              aria-invalid={!!errors.roomNumber}
-            />
-            {errors.roomNumber && (
-              <p className="text-sm text-destructive">{errors.roomNumber.message}</p>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" placeholder="Enter your email" {...register('email')} />
+            {errors.email && (
+              <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
 
@@ -120,7 +150,6 @@ export default function SignupPage() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Create a password"
                 {...register('password')}
-                aria-invalid={!!errors.password}
               />
               <Button
                 type="button"
@@ -134,21 +163,51 @@ export default function SignupPage() {
                 ) : (
                   <Eye className="h-4 w-4 text-muted-foreground" />
                 )}
-                <span className="sr-only">
-                  {showPassword ? 'Hide password' : 'Show password'}
-                </span>
               </Button>
             </div>
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <Label>Face Photo (required for ML)</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                {photo ? 'Change Photo' : 'Upload / Capture Photo'}
+              </Button>
+              {photoPreview && (
+                <img
+                  src={photoPreview}
+                  alt="Face preview"
+                  className="h-24 w-24 rounded-lg border object-cover"
+                />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Use a well-lit front-facing photo. The system saves it and generates 20 augmented variants for training.
+            </p>
+          </div>
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Create Account
+            Register & Process Face
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
@@ -156,6 +215,9 @@ export default function SignupPage() {
             <Link href="/login" className="text-primary underline-offset-4 hover:underline">
               Sign in
             </Link>
+          </p>
+          <p className="text-center text-xs text-muted-foreground">
+            Admin login: admin@hostel.com / admin123
           </p>
         </CardFooter>
       </form>

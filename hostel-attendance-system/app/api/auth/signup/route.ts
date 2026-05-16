@@ -1,51 +1,34 @@
 import { NextResponse } from 'next/server'
-import { dbHelpers } from '@/lib/mock-data'
-import { createToken, setAuthCookie } from '@/lib/auth'
+import { setAuthCookie } from '@/lib/auth'
+import { getBackendUrl } from '@/lib/backend-client'
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password, roomNumber } = await request.json()
+    const formData = await request.formData()
 
-    if (!name || !email || !password || !roomNumber) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      )
-    }
-
-    // Check if email already exists
-    const existingUser = dbHelpers.findUserByEmail(email)
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'Email already registered' },
-        { status: 400 }
-      )
-    }
-
-    // Create new student user
-    const newUser = dbHelpers.createUser({
-      name,
-      email,
-      password, // In a real app, this would be hashed
-      role: 'student',
-      roomNumber,
+    const res = await fetch(getBackendUrl('/auth/signup'), {
+      method: 'POST',
+      body: formData,
     })
 
-    const token = await createToken(newUser)
-    await setAuthCookie(token)
+    const data = await res.json()
 
-    // Return user without password
-    const { password: _, ...userWithoutPassword } = newUser
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: data.detail || data.error || 'Signup failed' },
+        { status: res.status }
+      )
+    }
+
+    await setAuthCookie(data.token)
 
     return NextResponse.json({
-      message: 'Signup successful',
-      user: userWithoutPassword,
+      message: data.message,
+      user: data.user,
+      ml: data.ml,
     })
   } catch (error) {
     console.error('Signup error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

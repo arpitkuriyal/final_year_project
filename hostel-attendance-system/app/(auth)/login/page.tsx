@@ -119,10 +119,10 @@ export default function LoginPage() {
               <strong>Demo Credentials:</strong>
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Student: rahul@student.com / password123
+              Admin: admin@hostel.com / admin123
             </p>
             <p className="text-xs text-muted-foreground">
-              Admin: admin@hostel.com / admin123
+              Students: register at Sign up with face photo
             </p>
           </div>
         </CardContent>

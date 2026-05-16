@@ -1,68 +1,52 @@
 import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { dbHelpers, type Grievance } from '@/lib/mock-data'
+import { getAuthToken } from '@/lib/auth'
+import { backendFetch } from '@/lib/backend-client'
 
-// GET - Get grievances
 export async function GET() {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
+    const token = await getAuthToken()
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    let grievances: Grievance[]
-    
-    if (user.role === 'admin') {
-      grievances = dbHelpers.getAllGrievances()
-    } else {
-      grievances = dbHelpers.getGrievancesByStudent(user.id)
+    const { res, data } = await backendFetch('/grievances', { token })
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to load grievances' },
+        { status: res.status }
+      )
     }
 
-    const stats = dbHelpers.getGrievanceStats()
-
-    return NextResponse.json({
-      grievances,
-      stats,
-    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Get grievances error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// POST - Create grievance
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
+    const token = await getAuthToken()
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (user.role !== 'student') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const body = await request.json()
+    const { res, data } = await backendFetch('/grievances', {
+      method: 'POST',
+      token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
 
-    const { category, description } = await request.json()
-
-    if (!category || !description) {
+    if (!res.ok) {
       return NextResponse.json(
-        { error: 'Category and description are required' },
-        { status: 400 }
+        { error: data.detail || 'Failed to submit grievance' },
+        { status: res.status }
       )
     }
 
-    const grievance = dbHelpers.createGrievance({
-      studentId: user.id,
-      studentName: user.name,
-      roomNumber: user.roomNumber || 'N/A',
-      category,
-      description,
-    })
-
-    return NextResponse.json({
-      message: 'Grievance submitted successfully',
-      grievance,
-    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Create grievance error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

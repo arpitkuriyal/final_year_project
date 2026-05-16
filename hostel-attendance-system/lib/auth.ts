@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
-import { dbHelpers, type User } from './mock-data'
+import { backendFetch } from './backend-client'
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'hostel-management-secret-key-2024'
@@ -14,7 +14,25 @@ export interface JWTPayload {
   role: 'student' | 'admin'
 }
 
-export async function createToken(user: User): Promise<string> {
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: 'student' | 'admin'
+  roomNumber?: string
+  studentId?: string
+  block?: string
+  branch?: string
+  batch?: string
+  photoFilename?: string
+  augmentCount?: number
+}
+
+export async function createToken(user: {
+  id: string
+  email: string
+  role: 'student' | 'admin'
+}): Promise<string> {
   const token = await new SignJWT({
     userId: user.id,
     email: user.email,
@@ -43,7 +61,7 @@ export async function setAuthCookie(token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7,
     path: '/',
   })
 }
@@ -58,19 +76,29 @@ export async function getAuthToken(): Promise<string | null> {
   return cookieStore.get(COOKIE_NAME)?.value || null
 }
 
+function mapBackendUser(user: Record<string, unknown>): User {
+  return {
+    id: user.id as string,
+    name: user.name as string,
+    email: user.email as string,
+    role: user.role as 'student' | 'admin',
+    roomNumber: (user.roomNumber as string) || undefined,
+    studentId: (user.studentId as string) || undefined,
+    block: (user.block as string) || undefined,
+    branch: (user.branch as string) || undefined,
+    batch: (user.batch as string) || undefined,
+    photoFilename: (user.photoFilename as string) || undefined,
+    augmentCount: (user.augmentCount as number) || 0,
+  }
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   const token = await getAuthToken()
   if (!token) return null
 
-  const payload = await verifyToken(token)
-  if (!payload) return null
-
-  const user = dbHelpers.findUserById(payload.userId)
-  if (!user) return null
-
-  // Return user without password
-  const { password: _, ...userWithoutPassword } = user
-  return userWithoutPassword as User
+  const { res, data } = await backendFetch('/auth/me', { token })
+  if (!res.ok) return null
+  return mapBackendUser(data.user)
 }
 
 export async function requireAuth(): Promise<User> {

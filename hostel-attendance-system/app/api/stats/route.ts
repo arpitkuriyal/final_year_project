@@ -1,22 +1,26 @@
 import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { dbHelpers } from '@/lib/mock-data'
+import { getAuthToken } from '@/lib/auth'
+import { backendFetch } from '@/lib/backend-client'
 
-// GET - Get admin dashboard stats
 export async function GET() {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
+    const token = await getAuthToken()
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const { res, data } = await backendFetch('/hostel-attendance/admin/stats', {
+      token,
+    })
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to load stats' },
+        { status: res.status }
+      )
     }
 
-    const stats = dbHelpers.getAdminStats()
-
-    return NextResponse.json(stats)
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Get stats error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -1,38 +1,38 @@
 import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { dbHelpers } from '@/lib/mock-data'
+import { getAuthToken } from '@/lib/auth'
+import { backendFetch } from '@/lib/backend-client'
 
-// PATCH - Update grievance (admin only)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
+    const token = await getAuthToken()
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { id } = await params
     const { status, adminReply } = await request.json()
 
-    const grievance = dbHelpers.updateGrievance(id, {
-      ...(status && { status }),
-      ...(adminReply && { adminReply }),
+    const { res, data } = await backendFetch(`/grievances/${id}`, {
+      method: 'PATCH',
+      token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status,
+        admin_reply: adminReply,
+      }),
     })
 
-    if (!grievance) {
-      return NextResponse.json({ error: 'Grievance not found' }, { status: 404 })
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: data.detail || 'Update failed' },
+        { status: res.status }
+      )
     }
 
-    return NextResponse.json({
-      message: 'Grievance updated successfully',
-      grievance,
-    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Update grievance error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

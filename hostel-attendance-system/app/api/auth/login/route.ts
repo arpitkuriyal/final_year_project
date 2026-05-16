@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { dbHelpers } from '@/lib/mock-data'
-import { createToken, setAuthCookie } from '@/lib/auth'
+import { setAuthCookie } from '@/lib/auth'
+import { backendFetch } from '@/lib/backend-client'
 
 export async function POST(request: Request) {
   try {
@@ -13,38 +13,27 @@ export async function POST(request: Request) {
       )
     }
 
-    const user = dbHelpers.findUserByEmail(email)
+    const { res, data } = await backendFetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
 
-    if (!user) {
+    if (!res.ok) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
+        { error: data.detail || 'Invalid email or password' },
+        { status: res.status }
       )
     }
 
-    // In a real app, you would hash and compare passwords
-    if (user.password !== password) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
-    }
-
-    const token = await createToken(user)
-    await setAuthCookie(token)
-
-    // Return user without password
-    const { password: _, ...userWithoutPassword } = user
+    await setAuthCookie(data.token)
 
     return NextResponse.json({
-      message: 'Login successful',
-      user: userWithoutPassword,
+      message: data.message,
+      user: data.user,
     })
   } catch (error) {
     console.error('Login error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,59 +1,49 @@
 import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { dbHelpers } from '@/lib/mock-data'
+import { getAuthToken } from '@/lib/auth'
+import { backendFetch } from '@/lib/backend-client'
 
-// GET - Get attendance history
 export async function GET() {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
+    const token = await getAuthToken()
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (user.role !== 'student') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const { res, data } = await backendFetch('/hostel-attendance', { token })
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to load attendance' },
+        { status: res.status }
+      )
     }
 
-    const records = dbHelpers.getAttendanceByStudent(user.id)
-    const stats = dbHelpers.getAttendanceStats(user.id)
-    const hasMarkedToday = dbHelpers.hasMarkedToday(user.id)
-
-    return NextResponse.json({
-      records,
-      stats,
-      hasMarkedToday,
-    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Get attendance error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// POST - Mark attendance
 export async function POST() {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
+    const token = await getAuthToken()
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (user.role !== 'student') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const { res, data } = await backendFetch('/hostel-attendance', {
+      method: 'POST',
+      token,
+    })
 
-    if (dbHelpers.hasMarkedToday(user.id)) {
+    if (!res.ok) {
       return NextResponse.json(
-        { error: 'Attendance already marked for today' },
-        { status: 400 }
+        { error: data.detail || 'Failed to mark attendance' },
+        { status: res.status }
       )
     }
 
-    const record = dbHelpers.markAttendance(user.id)
-
-    return NextResponse.json({
-      message: 'Attendance marked successfully',
-      record,
-    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Mark attendance error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
