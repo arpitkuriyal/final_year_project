@@ -92,3 +92,46 @@ def mark_face_attendance(student_roll_id: str) -> dict:
 def last_marked_within_24h(user_id: str) -> bool:
     allowed, _ = can_mark_attendance(user_id)
     return not allowed
+
+
+def get_student_face_status(student_roll_id: str) -> dict:
+    """Lookup student and 24h attendance state (no write). Used by the camera UI."""
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM users WHERE student_id = ? AND role = 'student'",
+            (str(student_roll_id),),
+        ).fetchone()
+
+    if not row:
+        return {
+            "found": False,
+            "studentId": student_roll_id,
+            "name": None,
+            "status": "unknown",
+            "statusLabel": "Not registered",
+            "canMark": False,
+        }
+
+    user = row_to_dict(row)
+    allowed, reason = can_mark_attendance(user["id"])
+    if allowed:
+        return {
+            "found": True,
+            "studentId": student_roll_id,
+            "name": user["name"],
+            "roomNumber": user.get("room_number"),
+            "status": "pending",
+            "statusLabel": "Ready to mark",
+            "canMark": True,
+        }
+
+    return {
+        "found": True,
+        "studentId": student_roll_id,
+        "name": user["name"],
+        "roomNumber": user.get("room_number"),
+        "status": "marked",
+        "statusLabel": "Attendance already marked",
+        "detail": reason,
+        "canMark": False,
+    }
