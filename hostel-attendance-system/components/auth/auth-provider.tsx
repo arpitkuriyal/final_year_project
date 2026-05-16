@@ -29,10 +29,16 @@ export interface SignupData {
   photo: File
 }
 
+export type LoginRole = 'student' | 'admin'
+
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  login: (
+    email: string,
+    password: string,
+    expectedRole: LoginRole
+  ) => Promise<{ success: boolean; error?: string }>
   signup: (data: SignupData) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -65,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser()
   }, [refreshUser])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, expectedRole: LoginRole) => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -79,14 +85,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: data.error || 'Login failed' }
       }
 
-      setUser(data.user)
-
-      if (data.user.role === 'admin') {
-        router.push('/admin')
-      } else {
-        router.push('/student')
+      if (data.user.role !== expectedRole) {
+        const portal = expectedRole === 'admin' ? 'warden' : 'student'
+        return {
+          success: false,
+          error: `This account is not a ${portal}. Use the correct login page.`,
+        }
       }
 
+      setUser(data.user)
+      router.push(expectedRole === 'admin' ? '/admin' : '/student')
       return { success: true }
     } catch {
       return { success: false, error: 'An error occurred' }

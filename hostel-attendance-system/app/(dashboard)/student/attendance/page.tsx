@@ -1,9 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import useSWR from 'swr'
-import { format } from 'date-fns'
-import { Button } from '@/components/ui/button'
+import { format, formatDistanceToNow } from 'date-fns'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -16,163 +14,120 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { CalendarCheck, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
-import { type Attendance } from '@/lib/mock-data'
+import { CalendarCheck, CheckCircle2, ScanFace, Clock, Info } from 'lucide-react'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
+interface AttendanceRecord {
+  id: string
+  date: string
+  status: string
+  source?: string
+  markedAt: string
+}
+
 export default function AttendancePage() {
-  const { data, isLoading, mutate } = useSWR('/api/attendance', fetcher)
-  const [isMarking, setIsMarking] = useState(false)
+  const { data, isLoading } = useSWR('/api/attendance', fetcher)
 
-  const handleMarkAttendance = async () => {
-    setIsMarking(true)
-    try {
-      const res = await fetch('/api/attendance', { method: 'POST' })
-      if (res.ok) {
-        mutate()
-      }
-    } finally {
-      setIsMarking(false)
-    }
-  }
-
-  if (isLoading) {
-    return <AttendanceSkeleton />
-  }
+  if (isLoading) return <AttendanceSkeleton />
 
   const stats = data?.stats || { percentage: 0, present: 0, absent: 0, total: 30 }
-  const records: Attendance[] = data?.records || []
-  const hasMarkedToday = data?.hasMarkedToday || false
+  const records: AttendanceRecord[] = data?.records || []
+  const hasMarkedIn24h = data?.hasMarkedIn24h ?? data?.hasMarkedToday ?? false
+  const nextMark = data?.nextMark
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Attendance</h1>
         <p className="text-muted-foreground">
-          Mark your daily attendance and view your history.
+          Recorded automatically when you scan your face at the hostel gate.
         </p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Attendance Rate</p>
-                <p className="text-3xl font-bold">{stats.percentage}%</p>
-              </div>
-              <div className="rounded-lg bg-primary/10 p-3">
-                <CalendarCheck className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Days Present</p>
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.present}</p>
-              </div>
-              <div className="rounded-lg bg-green-100 p-3 dark:bg-green-900/30">
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Days Absent</p>
-                <p className="text-3xl font-bold text-red-600 dark:text-red-400">{stats.absent}</p>
-              </div>
-              <div className="rounded-lg bg-red-100 p-3 dark:bg-red-900/30">
-                <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Days</p>
-                <p className="text-3xl font-bold">{stats.total}</p>
-              </div>
-              <div className="rounded-lg bg-muted p-3">
-                <CalendarCheck className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatMini label="Attendance rate" value={`${stats.percentage}%`} />
+        <StatMini label="Days present" value={String(stats.present)} accent="green" />
+        <StatMini label="Days absent" value={String(stats.absent)} accent="red" />
+        <StatMini label="Tracking period" value={`${stats.total} days`} />
       </div>
 
-      {/* Mark Attendance Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Today&apos;s Attendance</CardTitle>
-          <CardDescription>
-            {format(new Date(), 'EEEE, MMMM d, yyyy')}
-          </CardDescription>
+      <Card className="overflow-hidden border-primary/20">
+        <CardHeader className="bg-primary/5">
+          <CardTitle className="flex items-center gap-2">
+            <ScanFace className="h-5 w-5 text-primary" />
+            Face scanner — today
+          </CardTitle>
+          <CardDescription>{format(new Date(), 'EEEE, MMMM d, yyyy')}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col items-center justify-center gap-4 rounded-lg border bg-muted/30 p-8">
-            {hasMarkedToday ? (
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed bg-muted/20 p-8 text-center">
+            {hasMarkedIn24h ? (
               <>
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                  <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  <CheckCircle2 className="h-9 w-9 text-green-600 dark:text-green-400" />
                 </div>
-                <div className="text-center">
-                  <p className="text-lg font-semibold">Attendance Marked</p>
-                  <p className="text-sm text-muted-foreground">
-                    Your attendance has been recorded for today.
+                <div>
+                  <p className="text-lg font-semibold">Present (face verified)</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Your attendance is recorded for the last 24 hours.
                   </p>
+                  {records[0]?.markedAt && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Last scan: {format(new Date(records[0].markedAt), 'MMM d, h:mm a')}
+                    </p>
+                  )}
                 </div>
               </>
             ) : (
               <>
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-                  <CalendarCheck className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                  <ScanFace className="h-9 w-9 text-amber-600 dark:text-amber-400" />
                 </div>
-                <div className="text-center">
-                  <p className="text-lg font-semibold">Mark Your Attendance</p>
-                  <p className="text-sm text-muted-foreground">
-                    Click the button below to mark your attendance for today.
+                <div>
+                  <p className="text-lg font-semibold">Not marked yet</p>
+                  <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                    Go to the hostel entrance and look at the face recognition camera.
+                    Web marking is disabled.
                   </p>
                 </div>
-                <Button onClick={handleMarkAttendance} disabled={isMarking} size="lg">
-                  {isMarking && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Mark Present
-                </Button>
               </>
             )}
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Monthly Progress</span>
+          <div className="mt-6 flex gap-3 rounded-lg bg-muted/50 p-4 text-sm">
+            <Info className="h-5 w-5 shrink-0 text-primary" />
+            <ul className="space-y-1 text-muted-foreground text-left">
+              <li>One attendance per 24 hours (rolling window).</li>
+              <li>Use the same Student ID and a clear front-facing photo at signup.</li>
+              <li>After registering, wait ~1–2 min for the model to retrain.</li>
+            </ul>
+          </div>
+
+          {nextMark?.blocked && (
+            <div className="mt-4 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/30">
+              <Clock className="h-4 w-4 text-amber-600" />
+              <span>{nextMark.reason}</span>
+            </div>
+          )}
+
+          <div className="mt-6 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Monthly progress</span>
               <span className="font-medium">{stats.percentage}%</span>
             </div>
-            <Progress value={stats.percentage} className="h-3" />
-            <p className="text-xs text-muted-foreground">
-              {stats.percentage >= 75 
-                ? 'Great attendance! Keep it up.' 
-                : 'Try to improve your attendance rate.'}
-            </p>
+            <Progress value={stats.percentage} className="h-2" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Attendance History */}
       <Card>
         <CardHeader>
-          <CardTitle>Attendance History</CardTitle>
-          <CardDescription>
-            Your attendance records for the last 30 days.
-          </CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarCheck className="h-5 w-5" />
+            History
+          </CardTitle>
+          <CardDescription>Face-scanned attendance records</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -180,41 +135,36 @@ export default function AttendancePage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Day</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Marked At</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead className="text-right">Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {records.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
-                      No attendance records found.
+                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      No face scans yet. Visit the hostel gate scanner.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  records.slice(0, 15).map((record) => (
+                  records.slice(0, 20).map((record) => (
                     <TableRow key={record.id}>
                       <TableCell className="font-medium">
                         {format(new Date(record.date), 'MMM d, yyyy')}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(record.date), 'EEEE')}
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                          Present
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          variant="secondary"
-                          className={
-                            record.status === 'present'
-                              ? 'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400'
-                          }
-                        >
-                          {record.status === 'present' ? 'Present' : 'Absent'}
+                        <Badge variant="outline">
+                          {record.source === 'face' ? 'Face scan' : record.source || '—'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {format(new Date(record.markedAt), 'h:mm a')}
+                        {formatDistanceToNow(new Date(record.markedAt), { addSuffix: true })}
                       </TableCell>
                     </TableRow>
                   ))
@@ -228,20 +178,45 @@ export default function AttendancePage() {
   )
 }
 
+function StatMini({
+  label,
+  value,
+  accent,
+}: {
+  label: string
+  value: string
+  accent?: 'green' | 'red'
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p
+          className={`text-2xl font-bold ${
+            accent === 'green'
+              ? 'text-green-600 dark:text-green-400'
+              : accent === 'red'
+                ? 'text-red-600 dark:text-red-400'
+                : ''
+          }`}
+        >
+          {value}
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
 function AttendanceSkeleton() {
   return (
     <div className="space-y-6">
-      <div>
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="mt-2 h-4 w-64" />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Skeleton className="h-10 w-48" />
+      <div className="grid gap-4 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-24 rounded-xl" />
         ))}
       </div>
-      <Skeleton className="h-64 rounded-xl" />
-      <Skeleton className="h-96 rounded-xl" />
+      <Skeleton className="h-72 rounded-xl" />
     </div>
   )
 }

@@ -98,8 +98,8 @@ export default function StudentDashboard() {
             </div>
             <p className="text-sm text-muted-foreground">
               {hasMarkedToday
-                ? 'Great job! Your attendance is recorded for today.'
-                : 'Remember to mark your attendance before the day ends.'}
+                ? 'Face attendance recorded in the last 24 hours.'
+                : 'Visit the hostel face scanner to mark attendance (not via website).'}
             </p>
           </CardContent>
         </Card>

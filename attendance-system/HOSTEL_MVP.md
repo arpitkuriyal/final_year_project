@@ -43,23 +43,30 @@ Open http://localhost:3000
 
 ### 3. Try the flow
 
-1. **Sign up** as a student with a clear face photo
-2. Check `attendance-system/augmented_faces/` for new `STUDENTID_Name_aug*.jpg` files
-3. **Mark attendance** from Student → Attendance
-4. **Submit a grievance** from Student → Grievances
-5. **Login as admin** and manage grievances + view dashboard
-
-## Connect face recognition (existing ML)
-
-After students register, run your existing training pipeline:
+1. Open http://localhost:3000 → **Student Login** or **Warden Login** (separate pages)
+2. **Sign up** as a student with a clear face photo (wait ~1–2 min for auto-retrain)
+3. **Run the face scanner** (attendance is NOT marked from the website):
 
 ```bash
 cd attendance-system/edge_face_recognition
+source ../backend/.venv/bin/activate
+pip install insightface onnxruntime opencv-python joblib scikit-learn
+python generate_embeddings.py   # if not done after signup
 python train_Ann_model.py
-python ml_liveFaceRecognitionusingANN.py
+python hostel_live_recognition.py
 ```
 
-Recognized faces can log attendance with `source: face` (extend backend later).
+4. Student → **Attendance** shows face-scan status (read-only)
+5. **Grievances** from student; warden manages from Warden portal
+
+**Rules:** One attendance per **24 hours** per student. Manual web marking is disabled.
+
+## Face not recognized?
+
+1. Use the **same Student ID** at signup as you expect the model to learn (`58901` → files like `58901_Name_aug1.jpg`)
+2. Retrain after signup: warden → **Face Scanner** → Retrain, or run `generate_embeddings.py` + `train_Ann_model.py`
+3. Use the **new** script `hostel_live_recognition.py` (writes to SQLite), not `ml_liveFaceRecognitionusingANN.py` (old PostgreSQL flow)
+4. Good lighting, face the camera; confidence threshold is 72%
 
 ## API overview
 

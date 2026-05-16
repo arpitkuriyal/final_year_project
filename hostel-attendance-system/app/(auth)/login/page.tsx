@@ -1,146 +1,60 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useAuth } from '@/components/auth/auth-provider'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Building2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Building2, GraduationCap, Shield } from 'lucide-react'
 
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
-})
-
-type LoginForm = z.infer<typeof loginSchema>
-
-export default function LoginPage() {
-  const { login } = useAuth()
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-  })
-
-  const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true)
-    setError(null)
-
-    const result = await login(data.email, data.password)
-    
-    if (!result.success) {
-      setError(result.error || 'Login failed')
-    }
-    
-    setIsLoading(false)
-  }
-
+export default function LoginChooserPage() {
   return (
-    <Card className="border-0 shadow-lg">
-      <CardHeader className="space-y-4 pb-6">
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary">
           <Building2 className="h-7 w-7 text-primary-foreground" />
         </div>
-        <div className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>
-            Sign in to your hostel management account
-          </CardDescription>
-        </div>
-      </CardHeader>
+        <h1 className="text-2xl font-bold tracking-tight">Hostel Portal</h1>
+        <p className="text-sm text-muted-foreground">Choose how you want to sign in</p>
+      </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              {...register('email')}
-              aria-invalid={!!errors.email}
-            />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                {...register('password')}
-                aria-invalid={!!errors.password}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                )}
-                <span className="sr-only">
-                  {showPassword ? 'Hide password' : 'Show password'}
-                </span>
-              </Button>
-            </div>
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
-            )}
-          </div>
-
-          <div className="rounded-md bg-muted p-3">
-            <p className="text-xs text-muted-foreground">
-              <strong>Demo Credentials:</strong>
+      <div className="grid gap-4">
+        <Card className="border-2 transition-colors hover:border-primary/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              Student
+            </CardTitle>
+            <CardDescription>
+              View attendance and grievances. Marking is only via the hostel face scanner.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full" size="lg">
+              <Link href="/login/student">Student Login</Link>
+            </Button>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              New resident?{' '}
+              <Link href="/signup" className="text-primary underline-offset-4 hover:underline">
+                Register with face photo
+              </Link>
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Admin: admin@hostel.com / admin123
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Students: register at Sign up with face photo
-            </p>
-          </div>
-        </CardContent>
+          </CardContent>
+        </Card>
 
-        <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Sign In
-          </Button>
-
-          <p className="text-center text-sm text-muted-foreground">
-            {"Don't have an account? "}
-            <Link href="/signup" className="text-primary underline-offset-4 hover:underline">
-              Sign up
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+        <Card className="border-2 transition-colors hover:border-primary/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Shield className="h-5 w-5 text-primary" />
+              Warden
+            </CardTitle>
+            <CardDescription>
+              Manage students, grievances, and face attendance records.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="secondary" className="w-full" size="lg">
+              <Link href="/login/warden">Warden Login</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }

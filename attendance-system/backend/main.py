@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db
-from routes import auth, grievances, hostel_attendance, students
+from routes import auth, grievances, hostel_attendance, ml, students
 
 app = FastAPI(
     title="Hostel Attendance & Grievance API",
@@ -40,3 +40,4 @@ app.include_router(auth.router)
 app.include_router(students.router)
 app.include_router(grievances.router)
 app.include_router(hostel_attendance.router)
+app.include_router(ml.router)

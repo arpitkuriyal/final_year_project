@@ -1,10 +1,14 @@
-import uuid
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from auth_utils import get_current_user, require_admin
 from database import get_db
+from services.hostel_face_attendance import (
+    TIME_LIMIT_HOURS,
+    can_mark_attendance,
+    last_marked_within_24h,
+)
 
 router = APIRouter(prefix="/hostel-attendance", tags=["Hostel Attendance"])
 
@@ -19,7 +23,7 @@ def _serialize_record(row: dict) -> dict:
         "studentId": row["user_id"],
         "date": row["date"],
         "status": row["status"],
-        "source": row.get("source") or "manual",
+        "source": row.get("source") or "face",
         "markedAt": row["marked_at"],
     }
 
@@ -44,6 +48,31 @@ def _student_stats(conn, user_id: str, days: int = 30) -> dict:
     }
 
 
+def _next_mark_info(user_id: str) -> dict | None:
+    """If blocked by 24h rule, return when they can mark again."""
+    allowed, reason = can_mark_attendance(user_id)
+    if allowed:
+        return None
+    with get_db() as conn:
+        row = conn.execute(
+            """
+            SELECT marked_at FROM hostel_attendance
+            WHERE user_id = ? AND status = 'present'
+            ORDER BY marked_at DESC LIMIT 1
+            """,
+            (user_id,),
+        ).fetchone()
+    if not row:
+        return None
+    last = datetime.fromisoformat(row["marked_at"].replace("Z", ""))
+    next_at = last + timedelta(hours=TIME_LIMIT_HOURS)
+    return {
+        "blocked": True,
+        "reason": reason,
+        "nextMarkAt": next_at.isoformat(),
+    }
+
+
 @router.get("")
 def get_attendance(user: dict = Depends(get_current_user)):
     if user["role"] != "student":
@@ -54,63 +83,36 @@ def get_attendance(user: dict = Depends(get_current_user)):
             """
             SELECT * FROM hostel_attendance
             WHERE user_id = ?
-            ORDER BY date DESC
+            ORDER BY marked_at DESC
             LIMIT 60
             """,
             (user["id"],),
         ).fetchall()
         stats = _student_stats(conn, user["id"])
-        has_marked = conn.execute(
-            """
-            SELECT id FROM hostel_attendance
-            WHERE user_id = ? AND date = ?
-            """,
-            (user["id"], _today()),
-        ).fetchone()
+
+    marked_in_24h = last_marked_within_24h(user["id"])
+    last_face = None
+    if rows:
+        last_face = dict(rows[0]).get("source") == "face"
 
     return {
         "records": [_serialize_record(dict(r)) for r in rows],
         "stats": stats,
-        "hasMarkedToday": has_marked is not None,
+        "hasMarkedToday": marked_in_24h,
+        "hasMarkedIn24h": marked_in_24h,
+        "faceOnly": True,
+        "nextMark": _next_mark_info(user["id"]),
+        "lastSource": "face" if last_face else None,
     }
 
 
 @router.post("")
-def mark_attendance(user: dict = Depends(get_current_user)):
-    if user["role"] != "student":
-        raise HTTPException(status_code=403, detail="Student access only")
-
-    today = _today()
-    now = datetime.utcnow().isoformat()
-
-    with get_db() as conn:
-        existing = conn.execute(
-            "SELECT id FROM hostel_attendance WHERE user_id = ? AND date = ?",
-            (user["id"], today),
-        ).fetchone()
-        if existing:
-            raise HTTPException(
-                status_code=400, detail="Attendance already marked for today"
-            )
-
-        record_id = str(uuid.uuid4())
-        conn.execute(
-            """
-            INSERT INTO hostel_attendance (id, user_id, date, status, source, marked_at)
-            VALUES (?, ?, ?, 'present', 'manual', ?)
-            """,
-            (record_id, user["id"], today, now),
-        )
-        row = conn.execute(
-            "SELECT * FROM hostel_attendance WHERE id = ?", (record_id,)
-        ).fetchone()
-        stats = _student_stats(conn, user["id"])
-
-    return {
-        "message": "Hostel attendance marked successfully",
-        "record": _serialize_record(dict(row)),
-        "stats": stats,
-    }
+def mark_attendance_manual_blocked(user: dict = Depends(get_current_user)):
+    """Manual web marking disabled — use face scanner at hostel gate."""
+    raise HTTPException(
+        status_code=403,
+        detail="Attendance is only marked via face recognition at the hostel gate.",
+    )
 
 
 @router.get("/admin/stats")

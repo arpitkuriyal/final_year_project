@@ -1,4 +1,5 @@
 import re
+import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +11,7 @@ from auth_utils import create_access_token, get_current_user, user_without_passw
 from config import AUGMENTED_DIR, FACES_DIR
 from database import get_db, hash_password, row_to_dict, verify_password
 from services.face_augment import augment_student_photo
+from services.ml_pipeline import retrain_face_model
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -94,14 +96,17 @@ async def signup(
     user = row_to_dict(row)
     token = create_access_token(user["id"], user["email"], user["role"])
 
+    threading.Thread(target=retrain_face_model, daemon=True).start()
+
     return {
-        "message": "Signup successful. Face photo saved and augmented for ML training.",
+        "message": "Signup successful. Face enrolled — ML model retraining in background.",
         "token": token,
         "user": user_without_password(user),
         "ml": {
             "photoPath": str(face_path),
             "augmentedDir": str(AUGMENTED_DIR),
             "augmentCount": augment_count,
+            "retraining": True,
         },
     }
 

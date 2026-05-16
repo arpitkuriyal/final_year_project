@@ -25,6 +25,7 @@ import {
   Users,
   LogOut,
   DoorOpen,
+  ScanFace,
 } from 'lucide-react'
 
 const studentNavItems = [
@@ -61,6 +62,11 @@ const adminNavItems = [
     url: '/admin/grievances',
     icon: MessageSquareWarning,
   },
+  {
+    title: 'Face Scanner',
+    url: '/admin/scanner',
+    icon: ScanFace,
+  },
 ]
 
 export function AppSidebar() {
@@ -88,7 +94,7 @@ export function AppSidebar() {
           <div className="flex flex-col">
             <span className="text-sm font-semibold">Hostel Management</span>
             <span className="text-xs text-muted-foreground">
-              {user?.role === 'admin' ? 'Admin Portal' : 'Student Portal'}
+              {user?.role === 'admin' ? 'Warden Portal' : 'Student Portal'}
             </span>
           </div>
         </Link>

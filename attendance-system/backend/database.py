@@ -95,7 +95,7 @@ def init_db() -> None:
                 (
                     str(uuid.uuid4()),
                     None,
-                    "Hostel Admin",
+                    "Warden",
                     DEFAULT_ADMIN_EMAIL,
                     hash_password(DEFAULT_ADMIN_PASSWORD),
                     "admin",

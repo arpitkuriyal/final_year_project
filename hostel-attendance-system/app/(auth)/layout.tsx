@@ -8,7 +8,7 @@ export default function AuthLayout({
   return (
     <AuthProvider>
       <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 px-4 py-12">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-lg">
           {children}
         </div>
       </div>

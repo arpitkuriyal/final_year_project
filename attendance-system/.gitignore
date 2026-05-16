@@ -4,3 +4,6 @@ backend/data/
 __pycache__/
 *.pyc
 .DS_Store
+augmented_faces/
+student's faces/
+ann_data/
