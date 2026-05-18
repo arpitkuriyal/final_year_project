@@ -18,6 +18,11 @@ import { CalendarCheck, CheckCircle2, ScanFace, Clock, Info } from 'lucide-react
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
+function parseBackendDate(value: string) {
+  const hasTimezone = /Z$|[+-]\d{2}:\d{2}$/.test(value)
+  return new Date(hasTimezone ? value : `${value}Z`)
+}
+
 interface AttendanceRecord {
   id: string
   date: string
@@ -33,7 +38,7 @@ export default function AttendancePage() {
 
   const stats = data?.stats || { percentage: 0, present: 0, absent: 0, total: 30 }
   const records: AttendanceRecord[] = data?.records || []
-  const hasMarkedIn24h = data?.hasMarkedIn24h ?? data?.hasMarkedToday ?? false
+  const hasMarkedInWindow = data?.hasMarkedInLimit ?? data?.hasMarkedIn24h ?? data?.hasMarkedToday ?? false
   const nextMark = data?.nextMark
 
   return (
@@ -62,7 +67,7 @@ export default function AttendancePage() {
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed bg-muted/20 p-8 text-center">
-            {hasMarkedIn24h ? (
+            {hasMarkedInWindow ? (
               <>
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
                   <CheckCircle2 className="h-9 w-9 text-green-600 dark:text-green-400" />
@@ -70,11 +75,11 @@ export default function AttendancePage() {
                 <div>
                   <p className="text-lg font-semibold">Present (face verified)</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Your attendance is recorded for the last 24 hours.
+                    Your attendance is recorded for the current 12-hour window.
                   </p>
                   {records[0]?.markedAt && (
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Last scan: {format(new Date(records[0].markedAt), 'MMM d, h:mm a')}
+                      Last scan: {format(parseBackendDate(records[0].markedAt), 'MMM d, h:mm a')}
                     </p>
                   )}
                 </div>
@@ -98,7 +103,7 @@ export default function AttendancePage() {
           <div className="mt-6 flex gap-3 rounded-lg bg-muted/50 p-4 text-sm">
             <Info className="h-5 w-5 shrink-0 text-primary" />
             <ul className="space-y-1 text-muted-foreground text-left">
-              <li>One attendance per 24 hours (rolling window).</li>
+              <li>One attendance per 12 hours, so morning and night attendance can both be recorded.</li>
               <li>Use the same Student ID and a clear front-facing photo at signup.</li>
               <li>After signup, the face model retrains automatically in the background (~1–2 min).</li>
             </ul>
@@ -164,7 +169,7 @@ export default function AttendancePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {formatDistanceToNow(new Date(record.markedAt), { addSuffix: true })}
+                        {formatDistanceToNow(parseBackendDate(record.markedAt), { addSuffix: true })}
                       </TableCell>
                     </TableRow>
                   ))

@@ -41,6 +41,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 interface Student {
   id: string
+  studentId?: string
   name: string
   email: string
   roomNumber: string
@@ -48,6 +49,31 @@ interface Student {
   attendancePercentage: number
   totalGrievances: number
   pendingGrievances: number
+  inProgressGrievances?: number
+  resolvedGrievances?: number
+}
+
+function grievanceStatusLabel(student: Student) {
+  if (student.totalGrievances === 0) return 'None'
+  const parts: string[] = []
+  if (student.pendingGrievances > 0) parts.push(`${student.pendingGrievances} pending`)
+  if ((student.inProgressGrievances ?? 0) > 0) {
+    parts.push(`${student.inProgressGrievances} in progress`)
+  }
+  if ((student.resolvedGrievances ?? 0) > 0) {
+    parts.push(`${student.resolvedGrievances} resolved`)
+  }
+  return parts.join(' · ')
+}
+
+function statusBadgeClass(status: string) {
+  if (status === 'pending') {
+    return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+  }
+  if (status === 'resolved') {
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+  }
+  return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
 }
 
 interface StudentDetail {
@@ -61,11 +87,16 @@ export default function StudentsPage() {
   const { data, isLoading, mutate } = useSWR('/api/students', fetcher)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailStudentId, setDetailStudentId] = useState<string | null>(null)
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [deleteStudent, setDeleteStudent] = useState<Student | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleViewStudent = async (studentId: string) => {
+    setDetailStudentId(studentId)
+    setDetailOpen(true)
+    setSelectedStudent(null)
     setIsLoadingDetail(true)
     try {
       const res = await fetch(`/api/students/${studentId}`)
@@ -76,6 +107,12 @@ export default function StudentsPage() {
     } finally {
       setIsLoadingDetail(false)
     }
+  }
+
+  const closeDetail = () => {
+    setDetailOpen(false)
+    setDetailStudentId(null)
+    setSelectedStudent(null)
   }
 
   const handleDeleteStudent = async () => {
@@ -183,16 +220,13 @@ export default function StudentsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span>{student.totalGrievances}</span>
-                          {student.pendingGrievances > 0 && (
-                            <Badge 
-                              variant="secondary" 
-                              className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                            >
-                              {student.pendingGrievances} pending
-                            </Badge>
-                          )}
+                        <div className="flex max-w-[200px] flex-col gap-1">
+                          <span className="text-sm font-medium">
+                            {student.totalGrievances} total
+                          </span>
+                          <span className="text-xs text-muted-foreground leading-snug">
+                            {grievanceStatusLabel(student)}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -226,22 +260,36 @@ export default function StudentsPage() {
       </Card>
 
       {/* Student Detail Dialog */}
-      <Dialog open={!!selectedStudent || isLoadingDetail} onOpenChange={() => setSelectedStudent(null)}>
+      <Dialog open={detailOpen} onOpenChange={(open) => !open && closeDetail()}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Student Details</DialogTitle>
             <DialogDescription>
-              {selectedStudent?.student.name}
+              {selectedStudent?.student.name ?? 'Loading…'}
             </DialogDescription>
           </DialogHeader>
           {isLoadingDetail ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : selectedStudent && (
+          ) : selectedStudent ? (
             <div className="space-y-6">
-              {/* Info Grid */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                {detailStudentId && (
+                  <img
+                    src={`/api/students/${detailStudentId}/photo`}
+                    alt={selectedStudent.student.name}
+                    className="h-28 w-28 shrink-0 rounded-lg border object-cover bg-muted"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                )}
+              <div className="grid flex-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Student ID</p>
+                  <p className="font-medium">{selectedStudent.student.studentId ?? '—'}</p>
+                </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium">{selectedStudent.student.email}</p>
@@ -260,6 +308,7 @@ export default function StudentsPage() {
                   <p className="text-sm text-muted-foreground">Attendance Rate</p>
                   <p className="font-medium">{selectedStudent.stats.percentage}%</p>
                 </div>
+              </div>
               </div>
 
               {/* Attendance Stats */}
@@ -295,16 +344,7 @@ export default function StudentsPage() {
                     {selectedStudent.grievances.slice(0, 3).map((g) => (
                       <div key={g.id} className="flex items-center justify-between text-sm">
                         <span className="capitalize">{g.category.replace('_', ' ')}</span>
-                        <Badge 
-                          variant="secondary"
-                          className={
-                            g.status === 'pending' 
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                              : g.status === 'resolved'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                          }
-                        >
+                        <Badge variant="secondary" className={statusBadgeClass(g.status)}>
                           {g.status.replace('_', ' ')}
                         </Badge>
                       </div>
@@ -313,7 +353,7 @@ export default function StudentsPage() {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
 

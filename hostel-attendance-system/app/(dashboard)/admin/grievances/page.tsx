@@ -80,7 +80,13 @@ export default function AdminGrievancesPage() {
   }
 
   const grievances: Grievance[] = data?.grievances || []
-  const stats = data?.stats || { total: 0, pending: 0, inProgress: 0, resolved: 0 }
+  const stats = data?.stats || {
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    resolved: 0,
+    inappropriate: 0,
+  }
 
   const filteredGrievances = grievances.filter((g) => {
     const matchesSearch =
@@ -102,7 +108,7 @@ export default function AdminGrievancesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card 
           className="cursor-pointer hover:bg-muted/50" 
           onClick={() => setStatusFilter('all')}
@@ -139,6 +145,15 @@ export default function AdminGrievancesPage() {
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.resolved}</p>
           </CardContent>
         </Card>
+        <Card 
+          className="cursor-pointer hover:bg-muted/50" 
+          onClick={() => setStatusFilter('inappropriate')}
+        >
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Inappropriate</p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.inappropriate}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -161,6 +176,7 @@ export default function AdminGrievancesPage() {
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="resolved">Resolved</SelectItem>
+            <SelectItem value="inappropriate">Inappropriate</SelectItem>
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -304,13 +320,14 @@ export default function AdminGrievancesPage() {
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="inappropriate">Inappropriate</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Admin Reply */}
+              {/* Warden Reply */}
               <div className="space-y-2">
-                <Label htmlFor="reply">Admin Reply</Label>
+                <Label htmlFor="reply">Warden Reply</Label>
                 <Textarea
                   id="reply"
                   placeholder="Add a response for the student..."
@@ -343,8 +360,8 @@ function GrievancesSkeleton() {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="mt-2 h-4 w-64" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-20 rounded-xl" />
         ))}
       </div>

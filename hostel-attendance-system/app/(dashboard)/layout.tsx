@@ -36,7 +36,7 @@ export default async function DashboardLayout({
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink href={user.role === 'admin' ? '/admin' : '/student'}>
-                    {user.role === 'admin' ? 'Admin' : 'Student'}
+                    {user.role === 'admin' ? 'Warden' : 'Student'}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
