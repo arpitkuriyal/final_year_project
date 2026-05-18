@@ -98,7 +98,7 @@ export default function StudentDashboard() {
             </div>
             <p className="text-sm text-muted-foreground">
               {hasMarkedToday
-                ? 'Face attendance recorded in the last 24 hours.'
+                ? 'Face attendance recorded in the current 12-hour window.'
                 : 'Visit the hostel face scanner to mark attendance (not via website).'}
             </p>
           </CardContent>

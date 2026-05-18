@@ -43,7 +43,9 @@ export default function GrievancesPage() {
   const { data, isLoading, mutate } = useSWR('/api/grievances', fetcher)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedGrievance, setSelectedGrievance] = useState<Grievance | null>(null)
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved'>('all')
+  const [filter, setFilter] = useState<
+    'all' | 'pending' | 'in_progress' | 'resolved' | 'inappropriate'
+  >('all')
 
   const {
     register,
@@ -77,7 +79,13 @@ export default function GrievancesPage() {
   }
 
   const grievances: Grievance[] = data?.grievances || []
-  const stats = data?.stats || { total: 0, pending: 0, inProgress: 0, resolved: 0 }
+  const stats = data?.stats || {
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    resolved: 0,
+    inappropriate: 0,
+  }
   
   const filteredGrievances = filter === 'all' 
     ? grievances 
@@ -93,7 +101,7 @@ export default function GrievancesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="cursor-pointer hover:bg-muted/50" onClick={() => setFilter('all')}>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Total</p>
@@ -118,6 +126,12 @@ export default function GrievancesPage() {
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.resolved}</p>
           </CardContent>
         </Card>
+        <Card className="cursor-pointer hover:bg-muted/50" onClick={() => setFilter('inappropriate')}>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Inappropriate</p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.inappropriate}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -129,7 +143,7 @@ export default function GrievancesPage() {
               Submit Grievance
             </CardTitle>
             <CardDescription>
-              Report an issue to the hostel administration.
+              Report an issue to the hostel warden.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -271,7 +285,7 @@ export default function GrievancesPage() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium flex items-center gap-2">
                     <MessageCircle className="h-4 w-4" />
-                    Admin Response
+                    Warden Response
                   </p>
                   <p className="text-sm rounded-lg border border-primary/20 bg-primary/5 p-3">
                     {selectedGrievance.adminReply}
@@ -293,8 +307,8 @@ function GrievancesSkeleton() {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="mt-2 h-4 w-64" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-20 rounded-xl" />
         ))}
       </div>

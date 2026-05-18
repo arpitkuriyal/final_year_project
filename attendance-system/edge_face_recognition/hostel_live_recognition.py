@@ -7,6 +7,7 @@ Run after signup + retrain:
 """
 
 import datetime
+import os
 import sys
 from pathlib import Path
 
@@ -18,6 +19,7 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent / "backend"
 sys.path.insert(0, str(BACKEND_DIR))
 
 from services.hostel_face_attendance import (  # noqa: E402
+    TIME_LIMIT_HOURS,
     get_student_face_status,
     mark_face_attendance,
 )
@@ -33,7 +35,7 @@ MODEL_PATH = BASE_DIR / "models" / "ann_model.joblib"
 ENCODER_PATH = BASE_DIR / "models" / "label_encoder.joblib"
 
 CONFIDENCE_THRESHOLD = 0.72
-CAMERA_INDEX = 0
+CAMERA_INDEX = int(os.getenv("CAMERA_INDEX", "0"))
 SKIP_FRAMES = 4
 MARK_COOLDOWN_SEC = 30
 WINDOW_NAME = "Hostel Face Attendance"
@@ -109,7 +111,7 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     print("[INFO] Hostel face scanner running. Press Q to quit.")
-    print("[INFO] One attendance mark per student per 24 hours.")
+    print(f"[INFO] One attendance mark per student per {TIME_LIMIT_HOURS} hours.")
 
     frame_counter = 0
     recent_marks = {}
@@ -150,7 +152,10 @@ def main():
                         hud_lines = [
                             (name, (255, 255, 255)),
                             (status, C_MARKED),
-                            (info.get("detail", "Try again after 24 hours"), (180, 180, 180)),
+                            (
+                                info.get("detail", f"Try again after {TIME_LIMIT_HOURS} hours"),
+                                (180, 180, 180),
+                            ),
                         ]
                         hud_accent = C_MARKED
                     else:

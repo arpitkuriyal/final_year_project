@@ -97,11 +97,6 @@ export function LoginFormCard({ role, title, description, footerLink }: LoginFor
             )}
           </div>
 
-          {role === 'admin' && (
-            <p className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-              Default warden: admin@hostel.com / admin123
-            </p>
-          )}
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3">

@@ -26,7 +26,7 @@ export interface Grievance {
   roomNumber: string
   category: 'mess' | 'water' | 'electricity' | 'wifi' | 'cleaning' | 'room_issue'
   description: string
-  status: 'pending' | 'in_progress' | 'resolved'
+  status: 'pending' | 'in_progress' | 'resolved' | 'inappropriate'
   adminReply?: string
   createdAt: Date
   updatedAt: Date
@@ -173,7 +173,7 @@ const generateAttendanceRecords = (): Attendance[] => {
 }
 
 const categories: Grievance['category'][] = ['mess', 'water', 'electricity', 'wifi', 'cleaning', 'room_issue']
-const statuses: Grievance['status'][] = ['pending', 'in_progress', 'resolved']
+const statuses: Grievance['status'][] = ['pending', 'in_progress', 'resolved', 'inappropriate']
 
 const grievanceDescriptions: Record<Grievance['category'], string[]> = {
   mess: [
@@ -214,7 +214,7 @@ const grievanceDescriptions: Record<Grievance['category'], string[]> = {
   ],
 }
 
-const adminReplies: string[] = [
+const wardenReplies: string[] = [
   'We are looking into this issue. A team will be sent shortly.',
   'Thank you for bringing this to our attention. The issue has been resolved.',
   'We have escalated this to the maintenance team. Expected resolution within 48 hours.',
@@ -249,7 +249,7 @@ const generateGrievances = (): Grievance[] => {
     
     // Add admin reply for non-pending grievances
     if (status !== 'pending') {
-      grievance.adminReply = adminReplies[Math.floor(Math.random() * adminReplies.length)]
+      grievance.adminReply = wardenReplies[Math.floor(Math.random() * wardenReplies.length)]
     }
     
     grievances.push(grievance)
@@ -365,6 +365,7 @@ export const dbHelpers = {
       pending: all.filter(g => g.status === 'pending').length,
       inProgress: all.filter(g => g.status === 'in_progress').length,
       resolved: all.filter(g => g.status === 'resolved').length,
+      inappropriate: all.filter(g => g.status === 'inappropriate').length,
     }
   },
 
@@ -412,4 +413,5 @@ export const statusConfig: Record<Grievance['status'], { label: string; color: s
   pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' },
   in_progress: { label: 'In Progress', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
   resolved: { label: 'Resolved', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  inappropriate: { label: 'Inappropriate', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
 }

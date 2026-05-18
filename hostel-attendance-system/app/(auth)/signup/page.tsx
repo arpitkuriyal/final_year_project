@@ -18,7 +18,7 @@ const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   roomNumber: z.string().min(1, 'Room number is required'),
-  block: z.string().min(1, 'Block is required'),
+  block: z.string().min(1, 'Wing is required'),
   branch: z.string().min(1, 'Branch is required'),
   batch: z.string().min(1, 'Batch is required'),
 })
@@ -121,8 +121,8 @@ export default function SignupPage() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="block">Block</Label>
-              <Input id="block" placeholder="A" {...register('block')} />
+              <Label htmlFor="block">Wing</Label>
+              <Input id="block" placeholder="A Wing" {...register('block')} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="branch">Branch</Label>
@@ -215,9 +215,6 @@ export default function SignupPage() {
             <Link href="/login/student" className="text-primary underline-offset-4 hover:underline">
               Student sign in
             </Link>
-          </p>
-          <p className="text-center text-xs text-muted-foreground">
-            Admin login: admin@hostel.com / admin123
           </p>
         </CardFooter>
       </form>

@@ -1,11 +1,11 @@
-"""Mark hostel attendance from face recognition (SQLite). One mark per 24 hours."""
+"""Mark hostel attendance from face recognition (SQLite). One mark per 12 hours."""
 
 import uuid
 from datetime import datetime, timedelta
 
 from database import get_db, row_to_dict
 
-TIME_LIMIT_HOURS = 24
+TIME_LIMIT_HOURS = 12
 
 
 def _parse_iso(ts: str) -> datetime:
@@ -89,13 +89,17 @@ def mark_face_attendance(student_roll_id: str) -> dict:
     }
 
 
-def last_marked_within_24h(user_id: str) -> bool:
+def last_marked_within_limit(user_id: str) -> bool:
     allowed, _ = can_mark_attendance(user_id)
     return not allowed
 
 
+def last_marked_within_24h(user_id: str) -> bool:
+    return last_marked_within_limit(user_id)
+
+
 def get_student_face_status(student_roll_id: str) -> dict:
-    """Lookup student and 24h attendance state (no write). Used by the camera UI."""
+    """Lookup student and attendance state (no write). Used by the camera UI."""
     with get_db() as conn:
         row = conn.execute(
             "SELECT * FROM users WHERE student_id = ? AND role = 'student'",
