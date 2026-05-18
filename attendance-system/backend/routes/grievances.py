@@ -10,7 +10,7 @@ from database import get_db, row_to_dict
 router = APIRouter(prefix="/grievances", tags=["Grievances"])
 
 CATEGORIES = ["mess", "water", "electricity", "wifi", "cleaning", "room_issue"]
-STATUSES = ["pending", "in_progress", "resolved"]
+STATUSES = ["pending", "in_progress", "resolved", "inappropriate"]
 
 
 class GrievanceCreate(BaseModel):
@@ -49,6 +49,7 @@ def _grievance_stats(conn) -> dict:
         "pending": counts.get("pending", 0),
         "inProgress": counts.get("in_progress", 0),
         "resolved": counts.get("resolved", 0),
+        "inappropriate": counts.get("inappropriate", 0),
     }
 
 

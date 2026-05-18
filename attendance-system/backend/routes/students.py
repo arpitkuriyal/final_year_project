@@ -44,11 +44,13 @@ def _grievance_counts(conn, user_id: str) -> dict:
     pending = counts.get("pending", 0)
     in_progress = counts.get("in_progress", 0)
     resolved = counts.get("resolved", 0)
+    inappropriate = counts.get("inappropriate", 0)
     return {
-        "totalGrievances": pending + in_progress + resolved,
+        "totalGrievances": pending + in_progress + resolved + inappropriate,
         "pendingGrievances": pending,
         "inProgressGrievances": in_progress,
         "resolvedGrievances": resolved,
+        "inappropriateGrievances": inappropriate,
     }
 
 
