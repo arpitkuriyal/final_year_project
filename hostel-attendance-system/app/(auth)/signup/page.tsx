@@ -122,7 +122,7 @@ export default function SignupPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="block">Wing</Label>
-              <Input id="block" placeholder="A Wing" {...register('block')} />
+              <Input id="block" placeholder="1 Wing" {...register('block')} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="branch">Branch</Label>
@@ -171,7 +171,7 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Face Photo (required for ML)</Label>
+            <Label>Face Photo</Label>
             <input
               ref={fileInputRef}
               type="file"
@@ -188,7 +188,7 @@ export default function SignupPage() {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Camera className="mr-2 h-4 w-4" />
-                {photo ? 'Change Photo' : 'Upload / Capture Photo'}
+                {photo ? 'Change Photo' : 'Upload Photo'}
               </Button>
               {photoPreview && (
                 <img
