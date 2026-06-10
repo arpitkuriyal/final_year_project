@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthToken } from '@/lib/auth'
 import { backendFetch } from '@/lib/backend-client'
 
+const cameraIndex = Number.parseInt(process.env.SCANNER_CAMERA_INDEX || '0', 10)
+
 async function requireToken() {
   const token = await getAuthToken()
   if (!token) {
@@ -46,7 +48,10 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       token,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cameraIndex: 0, durationMinutes }),
+      body: JSON.stringify({
+        cameraIndex: Number.isFinite(cameraIndex) ? cameraIndex : 0,
+        durationMinutes,
+      }),
     })
 
     if (!res.ok) {

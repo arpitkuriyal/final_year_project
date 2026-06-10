@@ -11,6 +11,8 @@ import os
 import sys
 from pathlib import Path
 
+os.environ.setdefault("NO_ALBUMENTATIONS_UPDATE", "1")
+
 import cv2
 import joblib
 import numpy as np
