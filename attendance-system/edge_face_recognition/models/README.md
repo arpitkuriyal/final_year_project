@@ -1,3 +1,0 @@
-# models folder
-
-Purpose: ...

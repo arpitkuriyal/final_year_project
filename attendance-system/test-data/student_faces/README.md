@@ -1,3 +1,0 @@
-# student_faces folder
-
-Purpose: ...

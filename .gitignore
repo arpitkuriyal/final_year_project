@@ -1,8 +1,3 @@
 .DS_Store
-.vscode/
 __pycache__/
-*.pyc
-venv/
-.venv/
-attendance-system/venv/
-attendance-system/backend/.venv/
+*.py[cod]
