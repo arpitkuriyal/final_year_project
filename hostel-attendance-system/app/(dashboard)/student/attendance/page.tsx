@@ -104,8 +104,6 @@ export default function AttendancePage() {
             <Info className="h-5 w-5 shrink-0 text-primary" />
             <ul className="space-y-1 text-muted-foreground text-left">
               <li>One attendance per 12 hours, so morning and night attendance can both be recorded.</li>
-              <li>Use the same Student ID and a clear front-facing photo at signup.</li>
-              <li>After signup, the face model retrains automatically in the background (~1–2 min).</li>
             </ul>
           </div>
 

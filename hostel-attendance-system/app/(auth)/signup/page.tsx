@@ -81,7 +81,7 @@ export default function SignupPage() {
         <div className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Hostel Registration</CardTitle>
           <CardDescription>
-            Sign up with your details and face photo. Photos are augmented for the ML attendance model.
+            Sign up with your details and face photo.
           </CardDescription>
         </div>
       </CardHeader>
