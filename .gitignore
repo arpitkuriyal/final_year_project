@@ -6,7 +6,3 @@ venv/
 .venv/
 attendance-system/venv/
 attendance-system/backend/.venv/
-attendance-system/backend/data/
-attendance-system/augmented_faces/
-attendance-system/student's faces/
-attendance-system/ann_data/
