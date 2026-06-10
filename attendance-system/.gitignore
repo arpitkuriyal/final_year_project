@@ -23,6 +23,7 @@ models/*.joblib
 edge_face_recognition/models/*.joblib
 frame_output.jpg
 edge_face_recognition/frame_output.jpg
+edge_face_recognition/scanner.log
 
 # Local/private data exports
 *.xlsx

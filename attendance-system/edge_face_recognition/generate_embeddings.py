@@ -1,8 +1,17 @@
 import os
+import sys
 import numpy as np
 import cv2
 from collections import defaultdict
-from insightface.app import FaceAnalysis
+
+os.environ.setdefault("NO_ALBUMENTATIONS_UPDATE", "1")
+
+try:
+    from insightface.app import FaceAnalysis
+except ImportError:
+    print("[ERROR] Missing ML dependencies. Install them with:")
+    print("  pip install -r ../backend/requirements.txt")
+    sys.exit(1)
 
 # === PATHS ===
 
@@ -11,6 +20,12 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(BASE_DIR, "..", "augmented_faces")
 OUTPUT_DIR = os.path.join(BASE_DIR, "..", "ann_data")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+if not os.path.isdir(INPUT_DIR):
+    print(f"[ERROR] Augmented faces folder not found: {INPUT_DIR}")
+    print("Start the backend once to seed demo students and create augmented faces,")
+    print("or sign up at least two students with face photos before training.")
+    sys.exit(1)
 
 # === Initialize FaceAnalysis ===
 app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider'])
@@ -26,6 +41,11 @@ for file in os.listdir(INPUT_DIR):
             student_images[student_id].append(file)
         except Exception as e:
             print(f"[X] Error parsing filename {file}: {e}")
+
+if not student_images:
+    print(f"[ERROR] No face images found in: {INPUT_DIR}")
+    print("Add/sign up student photos first, then rerun this script.")
+    sys.exit(1)
 
 # === Generate embeddings for each student ===
 for student_id, files in student_images.items():
@@ -50,8 +70,8 @@ for student_id, files in student_images.items():
     if embeddings:
         embeddings_array = np.array(embeddings)
         np.save(os.path.join(OUTPUT_DIR, f"{student_id}_embeddings.npy"), embeddings_array)
-        print(f"[✅] Saved: {student_id}_embeddings.npy ({embeddings_array.shape})")
+        print(f"[OK] Saved: {student_id}_embeddings.npy ({embeddings_array.shape})")
     else:
-        print(f"[❌] No embeddings found for {student_id}")
+        print(f"[ERROR] No embeddings found for {student_id}")
 
-print("\n[✅] Embedding generation completed.")
+print("\n[OK] Embedding generation completed.")

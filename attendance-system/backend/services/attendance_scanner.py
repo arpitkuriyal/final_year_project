@@ -14,6 +14,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EDGE_DIR = PROJECT_ROOT / "edge_face_recognition"
 SCANNER_SCRIPT = EDGE_DIR / "hostel_live_recognition.py"
+MODEL_PATH = EDGE_DIR / "models" / "ann_model.joblib"
+ENCODER_PATH = EDGE_DIR / "models" / "label_encoder.joblib"
+LOG_PATH = EDGE_DIR / "scanner.log"
 
 _process: subprocess.Popen | None = None
 _started_at: float | None = None
@@ -37,6 +40,8 @@ def _status() -> dict:
         "durationMinutes": _duration_minutes if running else None,
         "cameraIndex": _camera_index if running else None,
         "script": str(SCANNER_SCRIPT),
+        "modelReady": MODEL_PATH.exists() and ENCODER_PATH.exists(),
+        "log": str(LOG_PATH),
     }
 
 
@@ -63,6 +68,15 @@ def _auto_stop() -> None:
     stop_scanner()
 
 
+def _tail_log(max_chars: int = 2000) -> str:
+    if not LOG_PATH.exists():
+        return ""
+    try:
+        return LOG_PATH.read_text(errors="replace")[-max_chars:]
+    except OSError:
+        return ""
+
+
 def start_scanner(camera_index: int = 0, duration_minutes: int = 30) -> dict:
     global _process, _started_at, _camera_index, _duration_minutes, _expires_at, _stop_timer
 
@@ -80,6 +94,16 @@ def start_scanner(camera_index: int = 0, duration_minutes: int = 30) -> dict:
             "message": f"Scanner script not found at {SCANNER_SCRIPT}.",
         }
 
+    if not MODEL_PATH.exists() or not ENCODER_PATH.exists():
+        return {
+            **_status(),
+            "success": False,
+            "message": (
+                "Face model is not trained yet. From attendance-system/edge_face_recognition run: "
+                "python generate_embeddings.py && python train_Ann_model.py"
+            ),
+        }
+
     if _stop_timer:
         _stop_timer.cancel()
 
@@ -95,14 +119,42 @@ def start_scanner(camera_index: int = 0, duration_minutes: int = 30) -> dict:
     else:
         popen_kwargs["start_new_session"] = True
 
-    _process = subprocess.Popen(
-        [sys.executable, str(SCANNER_SCRIPT)],
-        **popen_kwargs,
-    )
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    log_file = LOG_PATH.open("a", buffering=1)
+    log_file.write(f"\n--- Starting scanner at {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+
+    try:
+        _process = subprocess.Popen(
+            [sys.executable, str(SCANNER_SCRIPT)],
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            **popen_kwargs,
+        )
+    finally:
+        log_file.close()
+
     _started_at = time.time()
     _camera_index = camera_index
     _duration_minutes = max(1, duration_minutes)
     _expires_at = _started_at + (_duration_minutes * 60)
+
+    time.sleep(1.5)
+    if _process.poll() is not None:
+        exit_code = _process.returncode
+        _process = None
+        _started_at = None
+        _camera_index = None
+        _duration_minutes = None
+        _expires_at = None
+        return {
+            **_status(),
+            "success": False,
+            "message": (
+                f"Attendance scanner failed to start (exit code {exit_code}). "
+                f"Check camera permission/index and model files. Recent log: {_tail_log()}"
+            ),
+        }
+
     _stop_timer = threading.Timer(_duration_minutes * 60, _auto_stop)
     _stop_timer.daemon = True
     _stop_timer.start()
